@@ -1,0 +1,118 @@
+---CREATE TABLES
+---CREATED TABLE DETAILs
+
+--this will create and empty table that is called detailed
+--that will retain information for the details section of the
+--business section of the report
+DROP TABLE IF EXISTS details;
+CREATE TABLE details(
+customer_id integer, 
+first_name varchar(45),
+last_name varchar (45),
+email varchar (45),
+rental_id integer,
+rental_date timestamp,
+return_date timestamp,
+staff_id integer);
+
+--this displays all of the currently empty information
+--in the details table
+SELECT * FROM  details;
+SELECT COUNT(rental_id) FROM details;
+
+---CREATION OF THE EMPTY SUMMARY TABLE---
+
+--this creates the table named summary that will contain
+--the information for the summarized section of the report
+DROP TABLE  IF EXISTS summary;
+CREATE TABLE summary(
+customer_name varchar(95),
+email varchar(90),
+customer_count integer);
+
+
+---DATA INSERTION FOR DETAILS TABLE---
+
+--this will pull in the information from the customer and 
+--rental tables into the details table
+INSERT INTO details(
+customer_id, 
+first_name,
+last_name,
+email,
+rental_id,
+rental_date,
+return_date,
+staff_id )
+SELECT c.customer_id, c.first_name, c.last_name, c.email,
+r.rental_id, r.rental_date, r.return_date, r.staff_id
+FROM rental AS r
+INNER JOIN customer AS c ON c.customer_id = r.customer_id;
+
+--this will show the now inserted data from the customer and rental
+--tables inside of the details table
+SELECT * FROM details;
+
+
+---FUNCTION CREATION---
+
+--summary table update
+
+--1: empties out the summary table
+CREATE OR REPLACE FUNCTION refresh_summary()
+RETURNS TRIGGER AS $summary$
+BEGIN
+--2: refreshes the summary table with the data that is in details table
+DELETE FROM summary;
+INSERT INTO summary(
+SELECT 
+concat_ws(',', last_name, first_name) AS customer_name, email, COUNT(customer_id)
+FROM details
+GROUP BY customer_id, customer_name, email
+ORDER BY count(customer_id)DESC
+LIMIT 100);
+RETURN NEW;
+END; $summary$ 
+LANGUAGE plpgsql
+
+
+---TRIGGER CREATION---
+
+--this trigger runs the refresh_summary function when there is an INSERT INTO
+--in the details table
+CREATE TRIGGER refresh_summary
+AFTER INSERT ON details
+FOR EACH STATEMENT
+EXECUTE PROCEDURE refresh_summary();
+
+
+---PROCEDURE CREATION---
+CREATE OR REPLACE PROCEDURE  table_refresh()
+LANGUAGE plpgsql
+AS $$
+BEGIN
+
+DELETE FROM details;
+
+INSERT INTO details(
+customer_id, 
+first_name,
+last_name,
+email,
+rental_id,
+rental_date,
+return_date,
+staff_id )
+SELECT c.customer_id, c.first_name, c.last_name, c.email,
+r.rental_id, r.rental_date, r.return_date, r.staff_id
+FROM rental AS r
+INNER JOIN customer AS c ON c.customer_id = r.customer_id;
+END; $$
+
+--procdure call 
+CALL table_refresh();
+
+--get results
+SELECT * FROM details;
+SELECT * FROM summary;
+
