@@ -1,9 +1,10 @@
----CREATE TABLES
----CREATED TABLE DETAILs
+---Jason's SQL Code
+---B. CREATE TABLES
 
---this will create and empty table that is called detailed
+--this will create an empty table that is called details
 --that will retain information for the details section of the
 --business section of the report
+
 DROP TABLE IF EXISTS details;
 CREATE TABLE details(
 customer_id integer, 
@@ -31,7 +32,7 @@ email varchar(90),
 customer_count integer);
 
 
----DATA INSERTION FOR DETAILS TABLE---
+---C. DATA INSERTION FOR DETAILS TABLE---
 
 --this will pull in the information from the customer and 
 --rental tables into the details table
@@ -54,13 +55,13 @@ INNER JOIN customer AS c ON c.customer_id = r.customer_id;
 SELECT * FROM details;
 
 
----FUNCTION CREATION---
+---D. FUNCTION CREATION---
 
 --summary table update
 
 --1: empties out the summary table
 CREATE OR REPLACE FUNCTION refresh_summary()
-RETURNS TRIGGER AS $summary$
+RETURNS TRIGGER AS $$
 BEGIN
 --2: refreshes the summary table with the data that is in details table
 DELETE FROM summary;
@@ -72,11 +73,11 @@ GROUP BY customer_id, customer_name, email
 ORDER BY count(customer_id)DESC
 LIMIT 100);
 RETURN NEW;
-END; $summary$ 
+END; $$ 
 LANGUAGE plpgsql
 
 
----TRIGGER CREATION---
+---E. TRIGGER CREATION---
 
 --this trigger runs the refresh_summary function when there is an INSERT INTO
 --in the details table
@@ -86,8 +87,8 @@ FOR EACH STATEMENT
 EXECUTE PROCEDURE refresh_summary();
 
 
----PROCEDURE CREATION---
-CREATE OR REPLACE PROCEDURE  table_refresh()
+---F. PROCEDURE CREATION---
+CREATE OR REPLACE PROCEDURE table_refresh()
 LANGUAGE plpgsql
 AS $$
 BEGIN
@@ -109,10 +110,9 @@ FROM rental AS r
 INNER JOIN customer AS c ON c.customer_id = r.customer_id;
 END; $$
 
---procdure call 
+--procedure call 
 CALL table_refresh();
 
 --get results
 SELECT * FROM details;
 SELECT * FROM summary;
-
