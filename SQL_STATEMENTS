@@ -1,4 +1,5 @@
 ---Jason's SQL Code
+---Focuses on customer retention by frequency of rentals by customer
 ---B. CREATE TABLES
 
 --this will create an empty table that is called details
@@ -54,16 +55,17 @@ INNER JOIN customer AS c ON c.customer_id = r.customer_id;
 --tables inside of the details table
 SELECT * FROM details;
 
-
+SELECT COUNT(rental_id) FROM details WHERE customer_id = '348';
 ---D. FUNCTION CREATION---
 
 --summary table update
 
---1: empties out the summary table
+--1: creates a function that will refresh summary table data
 CREATE OR REPLACE FUNCTION refresh_summary()
 RETURNS TRIGGER AS $$
 BEGIN
 --2: refreshes the summary table with the data that is in details table
+--Transformation with a concat
 DELETE FROM summary;
 INSERT INTO summary(
 SELECT 
@@ -79,7 +81,7 @@ LANGUAGE plpgsql
 
 ---E. TRIGGER CREATION---
 
---this trigger runs the refresh_summary function when there is an INSERT INTO
+--this trigger runs the refresh_summary function when there is an INSERT
 --in the details table
 CREATE TRIGGER refresh_summary
 AFTER INSERT ON details
@@ -115,4 +117,7 @@ CALL table_refresh();
 
 --get results
 SELECT * FROM details;
+SELECT COUNT(customer_id) FROM details where first_name = 'Eva'
 SELECT * FROM summary;
+SELECT COUNT(customer_name) FROM summary where customer_count = '32';
+SELECT COUNT(first_name) FROM customer;
